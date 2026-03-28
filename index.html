@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DMO Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy: #0d2137;
+  --navy2: #142840;
+  --sidebar-w: 210px;
+  --header-h: 58px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Exo 2',sans-serif; background:#e8edf2; display:flex; height:100vh; overflow:hidden; }
+
+/* ── SAMPLE DATA BANNER ── */
+.sample-banner {
+  position:fixed; top:0; left:0; right:0; z-index:9999;
+  background:linear-gradient(90deg,#e53935,#c62828);
+  color:#fff; text-align:center;
+  font-size:12px; font-weight:700; letter-spacing:1px;
+  padding:5px 0;
+}
+body { padding-top:26px; }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width:var(--sidebar-w);
+  background:var(--navy);
+  display:flex; flex-direction:column;
+  flex-shrink:0; height:100%;
+  position:relative; z-index:10;
+}
+.sidebar-logo {
+  padding:18px 20px 14px;
+  font-family:'Rajdhani',sans-serif;
+  font-size:30px; font-weight:700;
+  color:#fff; text-decoration:underline;
+  letter-spacing:1px;
+  border-bottom:1px solid rgba(255,255,255,0.08);
+}
+.nav-item {
+  display:flex; align-items:center; gap:12px;
+  padding:13px 20px;
+  color:rgba(255,255,255,0.75);
+  font-size:13px; font-weight:600; font-style:italic;
+  cursor:pointer; transition:all 0.2s;
+  border-left:3px solid transparent;
+}
+.nav-item:hover { background:rgba(255,255,255,0.06); color:#fff; }
+.nav-item.active { background:rgba(255,255,255,0.10); color:#fff; border-left-color:#4fc3f7; }
+.nav-icon { font-size:16px; width:20px; text-align:center; flex-shrink:0; }
+.sidebar-footer {
+  margin-top:auto; padding:16px 20px;
+  border-top:1px solid rgba(255,255,255,0.08);
+  font-size:11px; color:rgba(255,255,255,0.5); font-style:italic;
+  line-height:1.8;
+}
+.sidebar-footer span { color:rgba(255,255,255,0.8); font-weight:600; }
+
+/* ── MAIN ── */
+.main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+
+/* ── TOPBAR ── */
+.topbar {
+  background:var(--navy); height:var(--header-h);
+  display:flex; align-items:center;
+  padding:0 24px; gap:16px;
+  flex-shrink:0;
+}
+.topbar-month {
+  font-family:'Rajdhani',sans-serif;
+  font-size:22px; font-weight:700;
+  color:#fff; flex:1;
+}
+.topbar-chevron {
+  background:rgba(255,255,255,0.12);
+  border:none; color:#fff; padding:4px 10px; border-radius:4px;
+  cursor:pointer; font-size:14px;
+}
+.topbar-user {
+  display:flex; align-items:center; gap:10px;
+  font-size:13px; font-weight:700; font-style:italic; color:#fff;
+}
+.topbar-avatar {
+  width:38px; height:38px; border-radius:4px;
+  background:linear-gradient(135deg,#f57c00,#e64a19);
+  display:flex; align-items:center; justify-content:center;
+  font-size:16px;
+}
+
+/* ── CONTENT ── */
+.content {
+  flex:1; overflow-y:auto; padding:20px;
+  background:#e8edf2;
+}
+
+/* ── SCREENS ── */
+.screen { display:none; }
+.screen.active { display:block; }
+
+/* ── SAMPLE WATERMARK ── */
+.sample-watermark {
+  background:rgba(229,57,53,0.08);
+  border:1.5px dashed #e53935;
+  border-radius:8px;
+  text-align:center;
+  padding:6px 14px;
+  font-size:11px; font-weight:700; color:#c62828;
+  letter-spacing:1px; margin-bottom:14px;
+  display:flex; align-items:center; justify-content:center; gap:6px;
+}
+
+/* ── KPI CARDS ── */
+.kpi-row { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:16px; }
+.kpi-card {
+  border-radius:8px; padding:14px 18px;
+  display:flex; flex-direction:column; gap:8px;
+}
+.kpi-card.green  { background:#8bc34a; }
+.kpi-card.teal   { background:#26c6da; }
+.kpi-card.yellow { background:#d4e157; }
+.kpi-card.pink   { background:#f8bbd0; }
+.kpi-card.orange { background:linear-gradient(135deg,#e8a045,#a0522d); color:#fff; }
+
+.kpi-label {
+  font-size:13px; font-weight:800; font-style:italic;
+  color:rgba(0,0,0,0.75);
+}
+.kpi-card.orange .kpi-label { color:rgba(255,255,255,0.9); }
+.kpi-val-row { display:flex; align-items:center; gap:10px; }
+.kpi-icon { font-size:22px; }
+.kpi-val {
+  font-family:'Rajdhani',sans-serif;
+  font-size:30px; font-weight:700; color:#1a1a1a;
+}
+.kpi-card.orange .kpi-val { color:#fff; }
+.kpi-val.red { color:#c62828; font-size:28px; }
+
+/* ── CHART CONTAINERS ── */
+.charts-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.chart-box {
+  background:#fff; border-radius:8px; padding:16px;
+  box-shadow:0 2px 8px rgba(0,0,0,0.06);
+}
+.chart-box.full { grid-column:1/-1; }
+.chart-box.brown { background:#c8864a; }
+.chart-box.purple-bg { background:#4a4080; }
+.chart-box.teal-bg { background:#2e8b7a; }
+
+.chart-title {
+  font-size:13px; font-weight:800; font-style:italic;
+  text-decoration:underline; color:#1a1a2e;
+  margin-bottom:12px; text-align:center;
+}
+.chart-box.brown .chart-title,
+.chart-box.purple-bg .chart-title,
+.chart-box.teal-bg .chart-title { color:#fff; }
+
+canvas { max-height:220px; }
+
+/* ── TEAM DETAILS ── */
+.team-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.team-list { display:flex; flex-direction:column; gap:0; }
+.team-header-row {
+  display:grid; grid-template-columns:1fr auto;
+  font-size:13px; font-weight:800; font-style:italic;
+  text-decoration:underline; color:#1a1a2e;
+  padding:0 0 8px; gap:12px;
+}
+.team-row {
+  display:grid; grid-template-columns:1fr auto;
+  align-items:center; border-radius:4px;
+  padding:9px 14px; margin-bottom:3px;
+  font-size:13px; font-weight:700; font-style:italic; color:#fff;
+}
+.team-row .days-box {
+  background:#fff; color:#1a1a2e;
+  font-weight:800; border-radius:3px;
+  padding:3px 12px; min-width:42px; text-align:center;
+}
+
+/* ── PROCESS INPUTS ── */
+.process-grid {
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  grid-template-rows:auto auto auto;
+  gap:10px;
+}
+.proc-box {
+  border-radius:6px; padding:14px 12px;
+  font-size:13px; font-weight:800; font-style:italic;
+  color:#fff; display:flex; flex-direction:column; gap:8px;
+}
+.proc-box .proc-val {
+  background:#fff; color:#1a1a2e;
+  border-radius:4px; padding:5px 10px;
+  font-size:15px; font-weight:800; font-style:normal;
+  text-align:center;
+}
+.proc-center {
+  grid-column:2/4; grid-row:1/3;
+  background:#e8edf2; border-radius:8px;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  padding:16px;
+}
+.proc-center canvas { max-height:220px; max-width:220px; }
+.proc-center-label {
+  font-size:12px; font-weight:700; color:#555; margin-top:6px;
+  text-align:center;
+}
+
+/* ── TOTAL VOLUME ── */
+.vol-top { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:12px; }
+.vol-card {
+  background:#fff; border-radius:8px; padding:14px;
+  box-shadow:0 2px 8px rgba(0,0,0,0.06); text-align:center;
+}
+.vol-card-title {
+  font-size:13px; font-weight:800; font-style:italic; color:#1a1a2e;
+  border-bottom:2px solid #e53935; padding-bottom:6px; margin-bottom:10px;
+}
+.vol-card canvas { max-height:130px; }
+.vol-bottom { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+.vol-big-card {
+  background:#fff; border-radius:8px; padding:14px;
+  box-shadow:0 2px 8px rgba(0,0,0,0.06); text-align:center;
+}
+.vol-big-title {
+  font-size:13px; font-weight:800; font-style:italic; color:#1a1a2e;
+  border-bottom:2px solid #e53935; padding-bottom:6px; margin-bottom:10px;
+}
+.vol-big-card canvas { max-height:160px; }
+.legend-small { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-top:8px; }
+.legend-dot { display:flex; align-items:center; gap:4px; font-size:10px; color:#555; }
+.dot { width:10px; height:10px; border-radius:50%; }
+
+/* ── UTILIZATION ── */
+.util-layout { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.util-charts { display:flex; flex-direction:column; gap:16px; align-items:center; }
+.util-donut-box { background:#fff; border-radius:8px; padding:16px; text-align:center; width:100%; }
+.util-donut-box canvas { max-height:170px; }
+.util-donut-label { font-size:13px; font-weight:800; font-style:italic; text-decoration:underline; color:#1a1a2e; margin-top:8px; }
+.util-rows { display:flex; flex-direction:column; gap:5px; }
+.util-row {
+  display:grid; grid-template-columns:1fr auto auto;
+  align-items:center; border-radius:5px;
+  padding:8px 12px; gap:8px;
+  font-size:12px; font-weight:700; font-style:italic; color:#fff;
+}
+.util-row .util-val {
+  background:#fff; color:#1a1a2e;
+  border-radius:3px; padding:3px 10px;
+  font-weight:800; font-style:normal;
+  min-width:52px; text-align:center; font-size:12px;
+}
+.util-row .util-info {
+  width:20px; height:20px; border-radius:50%;
+  border:2px solid rgba(255,255,255,0.5);
+  display:flex; align-items:center; justify-content:center;
+  font-size:10px; cursor:pointer;
+}
+
+/* ── ACCURACY ── */
+.acc-header { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px; }
+.acc-kpi {
+  background:#f48fb1; border-radius:8px; padding:14px 18px;
+  text-align:center;
+}
+.acc-kpi-title {
+  font-size:14px; font-weight:800; font-style:italic;
+  text-decoration:underline; color:#1a1a2e; margin-bottom:8px;
+  display:flex; align-items:center; justify-content:center; gap:6px;
+}
+.acc-kpi-val {
+  background:#fff; border-radius:4px; padding:6px;
+  font-size:20px; font-weight:800; color:#1a1a2e;
+}
+
+/* scrollbar */
+.content::-webkit-scrollbar { width:5px; }
+.content::-webkit-scrollbar-track { background:#dce3ea; }
+.content::-webkit-scrollbar-thumb { background:#0d2137; border-radius:3px; }
+
+@media(max-width:900px){
+  .kpi-row, .process-grid { grid-template-columns:repeat(2,1fr); }
+  .charts-row, .util-layout, .team-grid { grid-template-columns:1fr; }
+  .vol-top, .vol-bottom { grid-template-columns:repeat(2,1fr); }
+}
+</style>
+</head>
+<body>
+
+<!-- SAMPLE DATA BANNER -->
+<div class="sample-banner">
+  ⚠️ SAMPLE DATA ONLY — All figures, names, and charts shown are for demonstration purposes. This dashboard does not represent real or live data. ⚠️
+</div>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="sidebar-logo">DMO</div>
+
+  <div class="nav-item active" onclick="showScreen('dashboard',this)">
+    <span class="nav-icon">🗄️</span> Dashboard
+  </div>
+  <div class="nav-item" onclick="showScreen('team',this)">
+    <span class="nav-icon">➕</span> Team Details
+  </div>
+  <div class="nav-item" onclick="showScreen('process',this)">
+    <span class="nav-icon">📊</span> Process Inputs
+  </div>
+  <div class="nav-item" onclick="showScreen('volume',this)">
+    <span class="nav-icon">📁</span> Total Volume Processed
+  </div>
+  <div class="nav-item" onclick="showScreen('utilization',this)">
+    <span class="nav-icon">📈</span> Utilization Details
+  </div>
+  <div class="nav-item" onclick="showScreen('accuracy',this)">
+    <span class="nav-icon">🎛️</span> Accuracy / Defect log
+  </div>
+
+  <div class="sidebar-footer">
+    <div>Created By &nbsp; <span>Kumar, Senthil</span></div>
+    <div>Approved By <span>Kumar, Senthil</span></div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-month" id="topbarMonth">January - 2025</div>
+    <button class="topbar-chevron">▼</button>
+    <div style="flex:1"></div>
+    <div class="topbar-user">
+      Hello, SENTHIL KUMAR
+      <div class="topbar-avatar">🌅</div>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- ══════════════════════════════════════════
+         SCREEN 1: DASHBOARD
+    ══════════════════════════════════════════ -->
+    <div class="screen active" id="screen-dashboard">
+      <div class="sample-watermark">⚠️ SAMPLE DATA — For Demonstration Only</div>
+
+      <!-- KPIs -->
+      <div class="kpi-row">
+        <div class="kpi-card green">
+          <div class="kpi-label">Available FTE</div>
+          <div class="kpi-val-row"><span class="kpi-icon">👥</span><span class="kpi-val">10</span></div>
+        </div>
+        <div class="kpi-card teal">
+          <div class="kpi-label">Total Volume</div>
+          <div class="kpi-val-row"><span class="kpi-icon">🗄️</span><span class="kpi-val">3322</span></div>
+        </div>
+        <div class="kpi-card yellow">
+          <div class="kpi-label">No. Of Defects</div>
+          <div class="kpi-val-row"><span class="kpi-icon">⚠️</span><span class="kpi-val">0</span></div>
+        </div>
+        <div class="kpi-card pink">
+          <div class="kpi-label">Utilization %</div>
+          <div class="kpi-val-row"><span class="kpi-val red">104.3%</span></div>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div class="charts-row">
+        <div class="chart-box brown">
+          <div class="chart-title">Each Process Volume</div>
+          <canvas id="chartDashBar"></canvas>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <div class="chart-box purple-bg">
+            <div class="chart-title">Process Diversification</div>
+            <canvas id="chartDashPie"></canvas>
+          </div>
+          <div class="chart-box teal-bg">
+            <div class="chart-title">Attendance</div>
+            <canvas id="chartDashAtt"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SCREEN 2: TEAM DETAILS
+    ══════════════════════════════════════════ -->
+    <div class="screen" id="screen-team">
+      <div class="sample-watermark">⚠️ SAMPLE DATA — All team member names and attendance figures are fictitious</div>
+
+      <!-- KPI orange bar -->
+      <div style="background:linear-gradient(90deg,#e8a045,#a0522d);border-radius:8px;padding:16px 24px;margin-bottom:16px;">
+        <div class="kpi-row" style="margin-bottom:0;gap:16px;">
+          <div>
+            <div class="kpi-label" style="color:rgba(255,255,255,0.85);">Total No. of Working days</div>
+            <div style="background:#fff;border-radius:4px;padding:6px 12px;font-size:20px;font-weight:800;margin-top:6px;text-align:center;">20</div>
+          </div>
+          <div>
+            <div class="kpi-label" style="color:rgba(255,255,255,0.85);">Total No. of Leave availed days</div>
+            <div style="background:#fff;border-radius:4px;padding:6px 12px;font-size:20px;font-weight:800;margin-top:6px;text-align:center;">14</div>
+          </div>
+          <div>
+            <div class="kpi-label" style="color:rgba(255,255,255,0.85);">Absenteeism % Calculation ⓘ</div>
+            <div style="background:#fff;border-radius:4px;padding:6px 12px;font-size:20px;font-weight:800;margin-top:6px;text-align:center;">7%</div>
+          </div>
+          <div>
+            <div class="kpi-label" style="color:rgba(255,255,255,0.85);">Total Availability in Minutes ⓘ</div>
+            <div style="background:#fff;border-radius:4px;padding:6px 12px;font-size:20px;font-weight:800;margin-top:6px;text-align:center;">100440</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="team-grid">
+        <!-- Team list -->
+        <div>
+          <div class="team-header-row">
+            <span>Team Members</span><span>Present Days</span>
+          </div>
+          <div class="team-list" id="teamList"></div>
+        </div>
+        <!-- Attendance chart -->
+        <div class="chart-box">
+          <div class="chart-title">Attendance Chart</div>
+          <canvas id="chartTeamBar"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SCREEN 3: PROCESS INPUTS
+    ══════════════════════════════════════════ -->
+    <div class="screen" id="screen-process">
+      <div class="sample-watermark">⚠️ SAMPLE DATA — Process volumes shown are illustrative only</div>
+      <div class="process-grid" id="processGrid"></div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SCREEN 4: TOTAL VOLUME PROCESSED
+    ══════════════════════════════════════════ -->
+    <div class="screen" id="screen-volume">
+      <div class="sample-watermark">⚠️ SAMPLE DATA — Volume figures are for demonstration purposes only</div>
+
+      <!-- Top 4 group donuts -->
+      <div class="vol-top" id="volTop"></div>
+
+      <!-- Bottom 3 aggregate donuts -->
+      <div class="vol-bottom" id="volBottom"></div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SCREEN 5: UTILIZATION DETAILS
+    ══════════════════════════════════════════ -->
+    <div class="screen" id="screen-utilization">
+      <div class="sample-watermark">⚠️ SAMPLE DATA — Utilization minutes are fictitious sample figures</div>
+      <div class="util-layout">
+        <!-- Left: two donuts -->
+        <div class="util-charts">
+          <div class="util-donut-box">
+            <div class="chart-title" style="text-decoration:underline;">SAP Utilization</div>
+            <canvas id="chartUtilSAP"></canvas>
+          </div>
+          <div class="util-donut-box">
+            <div class="chart-title" style="text-decoration:underline;">Zendesk &amp; Other Utilization</div>
+            <canvas id="chartUtilZen"></canvas>
+          </div>
+        </div>
+        <!-- Right: process rows -->
+        <div>
+          <div style="display:grid;grid-template-columns:1fr auto;font-size:13px;font-weight:800;font-style:italic;text-decoration:underline;color:#1a1a2e;padding:0 0 8px;gap:12px;">
+            <span>Process</span><span>In Minutes</span>
+          </div>
+          <div class="util-rows" id="utilRows"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SCREEN 6: ACCURACY / DEFECT LOG
+    ══════════════════════════════════════════ -->
+    <div class="screen" id="screen-accuracy">
+      <div class="sample-watermark">⚠️ SAMPLE DATA — Accuracy and defect figures are for demonstration only</div>
+
+      <div class="acc-header">
+        <div class="acc-kpi">
+          <div class="acc-kpi-title">No Of Defect's <span style="font-size:13px;border:1.5px solid #1a1a2e;border-radius:50%;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-style:normal;">i</span></div>
+          <div class="acc-kpi-val">0</div>
+        </div>
+        <div class="acc-kpi">
+          <div class="acc-kpi-title">Accuracy % <span style="font-size:13px;border:1.5px solid #1a1a2e;border-radius:50%;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-style:normal;">i</span></div>
+          <div class="acc-kpi-val">100.00%</div>
+        </div>
+      </div>
+
+      <div class="chart-box">
+        <div class="chart-title">Employee Accuracy %</div>
+        <canvas id="chartAccuracy" style="max-height:320px;"></canvas>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────
+
+const teamMembers = [
+  { name:'Abinaya Parameshwaran', days:18, color:'#2e7d32' },
+  { name:'Anisha Banu',           days:18, color:'#388e3c' },
+  { name:'Geethaanjali Kalaivanan', days:19, color:'#66bb6a' },
+  { name:'Goutham Balasubramanian', days:19, color:'#ffa726' },
+  { name:'Jai Kumar',             days:19, color:'#fb8c00' },
+  { name:'Jayaprakash Ravi',      days:20, color:'#f9a825' },
+  { name:'Nandhakumar Venkatesh', days:17, color:'#e65100' },
+  { name:'Nikita Paramar',        days:20, color:'#e53935' },
+  { name:'Senthil Kumar',         days:20, color:'#8e24aa' },
+  { name:'Yokesh Sivakumar',      days:18, color:'#7986cb' },
+];
+
+const processInputs = [
+  { label:'Merch – Creation',            val:33,   color:'#558b2f' },
+  { label:'Non Merch - Creation',        val:52,   color:'#7cb342' },
+  { label:'AHS – Creation',              val:12,   color:'#aed581' },
+  { label:'Customer Account Setup',      val:24,   color:'#ffb74d' },
+  { label:'Adhoc Activity',              val:0,    color:'#388e3c' },
+  { label:'1099 Tickets',                val:180,  color:'#26c6da' },
+  { label:'Zendesk – Tickets',           val:1691, color:'#42a5f5' },
+  { label:'SBA',                         val:102,  color:'#7e57c2' },
+  { label:'Customer Account Maintenance',val:18,   color:'#ef5350' },
+  { label:'AHS – Maintenance',           val:23,   color:'#d84315' },
+  { label:'Merch – Maintenance',         val:392,  color:'#ff7043' },
+  { label:'Non Merch – Maintenance',     val:112,  color:'#ffa726' },
+];
+
+const utilRows = [
+  { label:'Utilization on Merch Creation',      val:540,   color:'#64b5f6' },
+  { label:'Utilization on Merch Maintenance',   val:7100,  color:'#aed581' },
+  { label:'Utilization on Non Merch Creation',  val:2035,  color:'#9575cd' },
+  { label:'Utilization on Non Merch Maintenance',val:2970, color:'#ffca28' },
+  { label:'Utilization on AHS Creation',        val:54,    color:'#ef5350' },
+  { label:'Utilization on AHS Maintenace',      val:460,   color:'#81d4fa' },
+  { label:'Utilization on Customer Creation',   val:302,   color:'#546e7a' },
+  { label:'Utilization on Customer Maintenance',val:7739,  color:'#ffa726' },
+  { label:'Utilization on SBA',                 val:1275,  color:'#212121' },
+  { label:'Utilization on 1099 Tickets',        val:2064,  color:'#ab47bc' },
+  { label:'Utilization on Zendesk Tickets',     val:84400, color:'#66bb6a' },
+  { label:'Other Utilization',                  val:330,   color:'#26c6da' },
+];
+
+// ── NAVIGATION ────────────────────────────────────────────────────────────
+function showScreen(id, el) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+  el.classList.add('active');
+
+  const months = { dashboard:'January - 2025', team:'February - 2025',
+    process:'February - 2025', volume:'February - 2025',
+    utilization:'January - 2025', accuracy:'January - 2025' };
+  document.getElementById('topbarMonth').textContent = months[id] || 'January - 2025';
+}
+
+// ── CHART HELPERS ─────────────────────────────────────────────────────────
+function makeDoughnut(id, labels, data, colors, centerText) {
+  const ctx = document.getElementById(id).getContext('2d');
+  const chart = new Chart(ctx, {
+    type:'doughnut',
+    data:{ labels, datasets:[{ data, backgroundColor:colors, borderWidth:2, borderColor:'#fff' }] },
+    options:{
+      cutout:'65%',
+      plugins:{
+        legend:{ display:false },
+        tooltip:{ callbacks:{ label: ctx => ` ${ctx.label}: ${ctx.parsed}` } }
+      }
+    }
+  });
+  // Draw center text
+  Chart.register({
+    id:'center-' + id,
+    afterDraw(ch) {
+      if (ch.canvas.id !== id) return;
+      const { ctx: c, chartArea:{ left,top,right,bottom } } = ch;
+      const cx = (left+right)/2, cy = (top+bottom)/2;
+      c.save();
+      c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.fillStyle = '#1a1a2e';
+      c.font = 'bold 22px Rajdhani,sans-serif';
+      c.fillText(centerText, cx, cy-8);
+      c.font = '10px Exo 2,sans-serif';
+      c.fillStyle = '#666';
+      c.fillText('', cx, cy+12);
+      c.restore();
+    }
+  });
+  return chart;
+}
+
+// ── BUILD TEAM LIST ────────────────────────────────────────────────────────
+const tl = document.getElementById('teamList');
+teamMembers.forEach(m => {
+  const row = document.createElement('div');
+  row.className = 'team-row';
+  row.style.background = m.color;
+  row.innerHTML = `<span>${m.name}</span><span class="days-box">${m.days}</span>`;
+  tl.appendChild(row);
+});
+
+// ── BUILD PROCESS INPUTS GRID ─────────────────────────────────────────────
+const pg = document.getElementById('processGrid');
+const total = processInputs.reduce((a,b)=>a+b.val,0);
+
+// Row 0 cols 0: Merch-Creation, col 1-2: center donut, col 3: Customer Account Setup
+// We'll lay it out manually
+const layout = [
+  { ...processInputs[0], gridArea:'1/1/2/2' },
+  { ...processInputs[1], gridArea:'1/2/2/3' },  // but center takes 2/3 cols
+  { ...processInputs[2], gridArea:'1/3/2/4' },
+  { ...processInputs[3], gridArea:'1/4/2/5' },
+  { ...processInputs[4], gridArea:'2/1/3/2' },
+  // center: 2/2 to 3/4
+  { ...processInputs[10], gridArea:'2/4/3/5' },
+  { ...processInputs[5], gridArea:'3/1/4/2' },
+  { ...processInputs[6], gridArea:'3/2/4/3' },
+  { ...processInputs[7], gridArea:'3/3/4/4' },
+  { ...processInputs[8], gridArea:'3/4/4/5' },
+  { ...processInputs[9], gridArea:'' },
+  { ...processInputs[11], gridArea:'' },
+];
+
+// Render boxes manually
+const procBoxDefs = [
+  { label:'Merch – Creation',             val:33,   color:'#558b2f', area:'1/1/2/2' },
+  { label:'Non Merch - Creation',         val:52,   color:'#7cb342', area:'1/2/2/3' },
+  { label:'AHS – Creation',               val:12,   color:'#aed581', area:'1/3/2/4' },
+  { label:'Customer Account Setup',       val:24,   color:'#ffb74d', area:'1/4/2/5' },
+  { label:'Adhoc Activity',               val:0,    color:'#388e3c', area:'2/1/3/2' },
+  { label:'Merch – Maintenance',          val:392,  color:'#ff7043', area:'2/4/3/5' },
+  { label:'1099 Tickets',                 val:180,  color:'#26c6da', area:'3/1/4/2' },
+  { label:'Zendesk – Tickets',            val:1691, color:'#42a5f5', area:'3/2/4/3' },
+  { label:'SBA',                          val:102,  color:'#7e57c2', area:'3/3/4/4' },
+  { label:'Customer Account Maintenance', val:18,   color:'#ef5350', area:'3/4/4/5' },
+  { label:'Non Merch – Maintenance',      val:112,  color:'#ffa726', area:'' },
+  { label:'AHS – Maintenance',            val:23,   color:'#d84315', area:'' },
+];
+
+// Top right two boxes stacked
+const rightStack = document.createElement('div');
+rightStack.style.cssText = 'grid-area:2/4/4/5;display:flex;flex-direction:column;gap:10px;';
+[10,11].forEach(i => {
+  const b = document.createElement('div');
+  b.className = 'proc-box';
+  b.style.background = procBoxDefs[i].color;
+  b.innerHTML = `${procBoxDefs[i].label}<div class="proc-val">${procBoxDefs[i].val}</div>`;
+  rightStack.appendChild(b);
+});
+
+procBoxDefs.slice(0,9).forEach(def => {
+  const b = document.createElement('div');
+  b.className = 'proc-box';
+  b.style.cssText = `background:${def.color};grid-area:${def.area};`;
+  b.innerHTML = `${def.label}<div class="proc-val">${def.val}</div>`;
+  pg.appendChild(b);
+});
+
+// Center donut
+const center = document.createElement('div');
+center.className = 'proc-center';
+center.style.gridArea = '2/2/4/4';
+center.innerHTML = `<canvas id="chartProcDonut" width="200" height="200"></canvas><div class="proc-center-label">Total Volume<br><strong>${total}</strong></div>`;
+pg.appendChild(center);
+pg.appendChild(rightStack);
+
+procBoxDefs.slice(9,10).forEach(def => {
+  const b = document.createElement('div');
+  b.className = 'proc-box';
+  b.style.cssText = `background:${def.color};grid-area:${def.area};`;
+  b.innerHTML = `${def.label}<div class="proc-val">${def.val}</div>`;
+  pg.appendChild(b);
+});
+
+// ── BUILD VOLUME PROCESSED ─────────────────────────────────────────────────
+const volGroups = [
+  { title:'Merch Group', total:527, setup:135, maint:392, colors:['#64b5f6','#aed581'] },
+  { title:'Non Merch Group', total:164, setup:52, maint:112, colors:['#64b5f6','#aed581'] },
+  { title:'AHS Group', total:35, setup:12, maint:23, colors:['#64b5f6','#aed581'] },
+  { title:'Customer Group', total:42, setup:24, maint:18, colors:['#64b5f6','#aed581'] },
+];
+const vt = document.getElementById('volTop');
+volGroups.forEach((g,i) => {
+  const card = document.createElement('div');
+  card.className = 'vol-card';
+  card.innerHTML = `<div class="vol-card-title">${g.title}</div><canvas id="volTop${i}" height="130"></canvas>`;
+  if (i===1) card.innerHTML += `<div class="legend-small"><div class="legend-dot"><div class="dot" style="background:#64b5f6"></div>Setup</div><div class="legend-dot"><div class="dot" style="background:#aed581"></div>Maintenance</div></div>`;
+  vt.appendChild(card);
+});
+
+const volBottom3 = [
+  { title:'Total Setup', total:121, data:[33,52,12,24], colors:['#2e7d32','#66bb6a','#f9a825','#ffd54f'], labels:['Merch – Creation','Non Merch – Creation','AHS – Creation','Customer Account Setup'] },
+  { title:'Total Maintenance', total:647, data:[392,112,23,18,102], colors:['#2e7d32','#66bb6a','#f9a825','#ffd54f','#e0e0e0'], labels:['Merch – Maintenance','Non Merch – Maintenance','AHS – Maintenance','Customer Account Maintenance','SBA'] },
+  { title:'Total Tickets', total:1871, data:[1691,180], colors:['#2e7d32','#aed581'], labels:['Zendesk – Tickets','1099 Tickets'] },
+];
+const vb = document.getElementById('volBottom');
+volBottom3.forEach((g,i) => {
+  const card = document.createElement('div');
+  card.className = 'vol-big-card';
+  card.innerHTML = `<div class="vol-big-title">${g.title}</div><canvas id="volBot${i}" height="160"></canvas><div class="legend-small">${g.labels.map((l,li)=>`<div class="legend-dot"><div class="dot" style="background:${g.colors[li]}"></div>${l}</div>`).join('')}</div>`;
+  vb.appendChild(card);
+});
+
+// ── BUILD UTILIZATION ROWS ─────────────────────────────────────────────────
+const ur = document.getElementById('utilRows');
+utilRows.forEach(u => {
+  const row = document.createElement('div');
+  row.className = 'util-row';
+  row.style.background = u.color;
+  row.innerHTML = `<span>${u.label}</span><div class="util-val">${u.val.toLocaleString()}</div><div class="util-info">i</div>`;
+  ur.appendChild(row);
+});
+
+// ── INIT CHARTS ────────────────────────────────────────────────────────────
+window.addEventListener('load', () => {
+
+  // Dashboard bar
+  new Chart(document.getElementById('chartDashBar').getContext('2d'), {
+    type:'bar',
+    data:{
+      labels:['Merch-Crtn','Non Merch-Cr','AHS-Cr','Cust Acct Setup','Merch-Maint','Non Merch-Mt','AHS-Maint','Cust Acct Mt','SBA','Zendesk-Tkt','1099 Tickets','Adhoc-Actvty'],
+      datasets:[{ data:[20,37,2,13,284,110,20,469,85,2110,172,0],
+        backgroundColor:['#e53935','#43a047','#fdd835','#c0392b','#e74c3c','#00acc1','#ffa726','#ff7043','#37474f','#2e7d32','#64b5f6','#7e57c2'],
+        borderRadius:3 }]
+    },
+    options:{
+      plugins:{ legend:{display:false} },
+      scales:{
+        x:{ ticks:{color:'#fff',font:{size:9}}, grid:{color:'rgba(255,255,255,0.1)'} },
+        y:{ ticks:{color:'#fff',font:{size:9}}, grid:{color:'rgba(255,255,255,0.15)'} }
+      }
+    }
+  });
+
+  // Dashboard pie
+  new Chart(document.getElementById('chartDashPie').getContext('2d'), {
+    type:'pie',
+    data:{
+      labels:['Setup','Maintenance','Tickets'],
+      datasets:[{ data:[121,647,1871], backgroundColor:['#64b5f6','#aed581','#9575cd'], borderWidth:2, borderColor:'#4a4080' }]
+    },
+    options:{ plugins:{ legend:{ position:'right', labels:{ color:'#fff', font:{size:11} } } } }
+  });
+
+  // Dashboard attendance
+  new Chart(document.getElementById('chartDashAtt').getContext('2d'), {
+    type:'pie',
+    data:{
+      labels:['Leave Days','Availability'],
+      datasets:[{ data:[14,186], backgroundColor:['#64b5f6','#aed581'], borderWidth:2, borderColor:'#2e8b7a' }]
+    },
+    options:{ plugins:{ legend:{ position:'right', labels:{ color:'#fff', font:{size:11} } } } }
+  });
+
+  // Team bar
+  new Chart(document.getElementById('chartTeamBar').getContext('2d'), {
+    type:'bar',
+    data:{
+      labels:['Abinaya','Anisha','Geethaanja.','Goutham','Jai kumar','Jayaprakas.','Nandhakum.','Nikita','Senthilkum.','Yokesh'],
+      datasets:[{ data:[18,18,19,19,19,20,17,20,20,18],
+        backgroundColor:teamMembers.map(m=>m.color), borderRadius:3 }]
+    },
+    options:{
+      plugins:{ legend:{display:false} },
+      scales:{
+        x:{ ticks:{font:{size:9},maxRotation:45} },
+        y:{ min:15, max:21, ticks:{stepSize:5} }
+      }
+    }
+  });
+
+  // Process donut
+  setTimeout(()=>{
+    const pctx = document.getElementById('chartProcDonut');
+    if (pctx) {
+      new Chart(pctx.getContext('2d'), {
+        type:'doughnut',
+        data:{
+          labels:processInputs.map(p=>p.label),
+          datasets:[{ data:processInputs.map(p=>p.val), backgroundColor:processInputs.map(p=>p.color), borderWidth:2, borderColor:'#e8edf2' }]
+        },
+        options:{ cutout:'60%', plugins:{ legend:{display:false} } }
+      });
+    }
+  }, 100);
+
+  // Volume top donuts
+  volGroups.forEach((g,i) => {
+    setTimeout(()=>{
+      const el = document.getElementById(`volTop${i}`);
+      if (el) new Chart(el.getContext('2d'), {
+        type:'doughnut',
+        data:{ labels:['Setup','Maintenance'], datasets:[{ data:[g.setup,g.maint], backgroundColor:g.colors, borderWidth:2, borderColor:'#fff' }] },
+        options:{ cutout:'65%', plugins:{ legend:{display:false}, tooltip:{enabled:true} },
+          animation:{ onComplete: () => {
+            const c = el.getContext('2d'), ch = Chart.getChart(el);
+            const { chartArea:{left,top,right,bottom} } = ch;
+            c.save(); c.textAlign='center'; c.textBaseline='middle';
+            c.fillStyle='#1a1a2e'; c.font='bold 18px Rajdhani';
+            c.fillText(g.total,(left+right)/2,(top+bottom)/2); c.restore();
+          }}
+        }
+      });
+    }, 150*i);
+  });
+
+  // Volume bottom donuts
+  volBottom3.forEach((g,i) => {
+    setTimeout(()=>{
+      const el = document.getElementById(`volBot${i}`);
+      if (el) new Chart(el.getContext('2d'), {
+        type:'doughnut',
+        data:{ labels:g.labels, datasets:[{ data:g.data, backgroundColor:g.colors, borderWidth:2, borderColor:'#fff' }] },
+        options:{ cutout:'62%', plugins:{ legend:{display:false} },
+          animation:{ onComplete: () => {
+            const c = el.getContext('2d'), ch = Chart.getChart(el);
+            const { chartArea:{left,top,right,bottom} } = ch;
+            c.save(); c.textAlign='center'; c.textBaseline='middle';
+            c.fillStyle='#1a1a2e'; c.font='bold 26px Rajdhani';
+            c.fillText(g.total,(left+right)/2,(top+bottom)/2); c.restore();
+          }}
+        }
+      });
+    }, 150*i);
+  });
+
+  // Utilization SAP donut
+  const sapData = utilRows.slice(0,9);
+  new Chart(document.getElementById('chartUtilSAP').getContext('2d'), {
+    type:'doughnut',
+    data:{ labels:sapData.map(u=>u.label), datasets:[{ data:sapData.map(u=>u.val), backgroundColor:sapData.map(u=>u.color), borderWidth:2, borderColor:'#fff' }] },
+    options:{ cutout:'62%', plugins:{ legend:{display:false} },
+      animation:{ onComplete:()=>{
+        const el = document.getElementById('chartUtilSAP');
+        const c = el.getContext('2d'), ch = Chart.getChart(el);
+        const { chartArea:{left,top,right,bottom} } = ch;
+        c.save(); c.textAlign='center'; c.textBaseline='middle';
+        c.fillStyle='#1a1a2e'; c.font='bold 22px Rajdhani';
+        c.fillText('22475',(left+right)/2,(top+bottom)/2-8);
+        c.font='11px Exo 2'; c.fillStyle='#555';
+        c.fillText('Mins',(left+right)/2,(top+bottom)/2+12);
+        c.restore();
+      }}
+    }
+  });
+
+  // Utilization Zendesk donut
+  const zenData = utilRows.slice(9);
+  new Chart(document.getElementById('chartUtilZen').getContext('2d'), {
+    type:'doughnut',
+    data:{ labels:zenData.map(u=>u.label), datasets:[{ data:zenData.map(u=>u.val), backgroundColor:zenData.map(u=>u.color), borderWidth:2, borderColor:'#fff' }] },
+    options:{ cutout:'62%', plugins:{ legend:{display:false} },
+      animation:{ onComplete:()=>{
+        const el = document.getElementById('chartUtilZen');
+        const c = el.getContext('2d'), ch = Chart.getChart(el);
+        const { chartArea:{left,top,right,bottom} } = ch;
+        c.save(); c.textAlign='center'; c.textBaseline='middle';
+        c.fillStyle='#1a1a2e'; c.font='bold 22px Rajdhani';
+        c.fillText('86794',(left+right)/2,(top+bottom)/2-8);
+        c.font='11px Exo 2'; c.fillStyle='#555';
+        c.fillText('Mins',(left+right)/2,(top+bottom)/2+12);
+        c.restore();
+      }}
+    }
+  });
+
+  // Accuracy bar
+  new Chart(document.getElementById('chartAccuracy').getContext('2d'), {
+    type:'bar',
+    data:{
+      labels:['Abinaya','Anisha','Geethaanjal.','Goutham','Jai kumar','Jayaprakash','Nandhakumar','Nikita','Senthilkuma.','Yokesh'],
+      datasets:[{ label:'Accuracy %', data:[100,100,100,100,100,100,100,100,100,100],
+        backgroundColor:['#2e7d32','#43a047','#aed581','#ffd54f','#ffa726','#ef5350','#e53935','#ab47bc','#7e57c2','#64b5f6'],
+        borderRadius:4 }]
+    },
+    options:{
+      plugins:{ legend:{display:false}, datalabels:{ display:false } },
+      scales:{
+        x:{ ticks:{font:{size:10},maxRotation:30} },
+        y:{ min:20, max:120, ticks:{stepSize:20} }
+      }
+    }
+  });
+
+});
+</script>
+</body>
+</html>
